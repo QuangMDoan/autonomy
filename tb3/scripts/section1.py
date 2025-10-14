@@ -8,6 +8,7 @@ if __name__ == "__main__":
     # Set seed and generate data
     np.random.seed(42)
     x = np.random.normal(size=(4, 10))  # shape: (4, 10)
+    print("Input matrix x:\n", np.round(x, decimals=3))
 
     # Compute L2 squared distance matrix
     # Step 1: Compute the dot product matrix

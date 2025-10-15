@@ -32,6 +32,9 @@ class Heartbeat(Node):
         # create subscription with: self.create_subscription(<msg type>, <topic>, <callback>, <qos>)
         self.motor_sub = self.create_subscription(Bool, "/health/motor", self.health_callback, 10)
 
+        self.kill_sub = self.create_subscription(Bool, "/kill", self.kill_callback, 10)
+        self.get_logger().info('HeartbeatNode started...')
+
     def hb_callback(self) -> None:
         """
         Heartbeat callback triggered by the timer
@@ -41,6 +44,7 @@ class Heartbeat(Node):
         msg.linear.x = 0.2  # set this to be the linear velocity
         msg.angular.z = 0.1 # set this to be the angular velocity
         self.hb_pub.publish(msg)
+        self.get_logger().info(f'Publishing: linear.x = {msg.linear.x}, angular.z = {msg.angular.z}')
 
     def health_callback(self, msg: Bool) -> None:
         """
@@ -49,6 +53,13 @@ class Heartbeat(Node):
         if not msg.data:
             self.get_logger().fatal("Heartbeat stopped")
             self.hb_timer.cancel()
+
+    def kill_callback(self, msg: Bool) -> None:
+        if msg.data:
+            self.hb_timer.cancel()
+            zero_twist = Twist()
+            self.hb_pub.publish(zero_twist)
+            self.get_logger().info('Published zero velocity to /cmd_vel')
 
 if __name__ == "__main__":
     # initialize ROS2 context (must run before any other rclpy call)
@@ -62,4 +73,3 @@ if __name__ == "__main__":
 
     # cleanly shutdown ROS2 context
     rclpy.shutdown()
-

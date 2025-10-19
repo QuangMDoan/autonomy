@@ -199,6 +199,7 @@ class AStar(object):
                     continue
                 
                 self.came_from[xn] = x_current
+                self.cost_to_arrive[xn] = est_cost_to_arrive
                 self.est_cost_through[xn] = est_cost_to_arrive + \
                     self.distance(xn, self.x_goal)
         

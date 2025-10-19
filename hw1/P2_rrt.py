@@ -190,8 +190,33 @@ class RRT(object):
         """
         ########## Code starts here ##########
 
+        if self.path is None or len(self.path) < 3:  # Need at least 3 nodes to shortcut
+            return
+            
+        SUCCESS = False        
+        while not SUCCESS:
+            SUCCESS = True
+            
+            for i in range(1, len(self.path)-1):
+                # Get current node and its parent/child
+                x = self.path[i]
+                parent = self.path[i-1]  
+                child = self.path[i+1]
+                
+                # if COLLISION_FREE(PARENT(x), CHILD(x))
+                if self.is_free_motion(self.obstacles, parent, child):
+        
+                    # remove x from path
+                    self.path.pop(i)
+                    
+                    SUCCESS = False
+                    
+                    # break inner loop to restart with new shortened path
+                    break
+
         ########## Code ends here ##########
 
+    
 class GeometricRRT(RRT):
     """
     Represents a geometric planning problem, where the steering solution

@@ -106,6 +106,51 @@ class RRT(object):
         #   - the order in which you pass in arguments to steer_towards and is_free_motion is important
 
         ########## Code starts here ##########
+        # Main loop
+        for _ in range(max_iters):
+
+            # sample random state (with goal bias)
+            if np.random.random() < goal_bias:
+                x_rand = self.x_goal
+            else:
+                # sample random point within state bounds
+                x_rand = self.statespace_lo + np.random.random(state_dim) * (self.statespace_hi - self.statespace_lo)
+            
+            # nearest vertex in current tree
+            nearest_idx = self.find_nearest(V[:n], x_rand)
+            x_nearest = V[nearest_idx]
+            
+            # steer towards x_rand (with maximum step size eps)
+            x_new = self.steer_towards(x_nearest, x_rand, eps)
+            
+            # if path to x_new is collision free
+            if self.is_free_motion(self.obstacles, x_nearest, x_new):
+                # add new vertex and edge
+                V[n] = x_new
+                P[n] = nearest_idx
+                
+                # check if we can connect to goal
+                dist_to_goal = np.linalg.norm(x_new - self.x_goal)
+                if dist_to_goal < eps:
+                    if self.is_free_motion(self.obstacles, x_new, self.x_goal):
+                        # Add goal state to tree
+                        V[n+1] = self.x_goal
+                        P[n+1] = n
+                        
+                        # Extract path by walking back from goal to root
+                        path = [self.x_goal]
+                        parent_idx = n
+                        while parent_idx >= 0:
+                            path.append(V[parent_idx])
+                            parent_idx = P[parent_idx]
+                        
+                        # Store path in reverse order (from start to goal)
+                        self.path = path[::-1]
+                        success = True
+                        break
+                
+                # Increment number of vertices in tree
+                n += 1
         
         ########## Code ends here ##########
 

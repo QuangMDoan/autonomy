@@ -106,7 +106,7 @@ class RRT(object):
         #   - the order in which you pass in arguments to steer_towards and is_free_motion is important
 
         ########## Code starts here ##########
-
+        
         ########## Code ends here ##########
 
         plt.figure()
@@ -156,18 +156,28 @@ class GeometricRRT(RRT):
     def find_nearest(self, V, x):
         # Consult function specification in parent (RRT) class.
         ########## Code starts here ##########
-        # Hint: This should take 1-3 line.
 
+        # compute euclidean distances from x to all points in V
+        distances = np.linalg.norm(V - x, axis=1)
+
+        # return int index of nearest point in V to x
+        return np.argmin(distances)
         ########## Code ends here ##########
-        pass
 
     def steer_towards(self, x1, x2, eps):
         # Consult function specification in parent (RRT) class.
         ########## Code starts here ##########
-        # Hint: This should take 1-4 line.
 
+        # get direction vector from x1 to x2
+        dx = x2 - x1
+
+        # calculate the distance between points
+        distance = np.linalg.norm(dx)
+
+        # if distance is less than eps, return x2, 
+        # otherwise return point at distance eps
+        return x2 if distance < eps else x1 + (dx / distance) * eps
         ########## Code ends here ##########
-        pass
 
     def is_free_motion(self, obstacles, x1, x2):
         motion = np.array([x1, x2])

@@ -6,3 +6,5 @@ Python package dependencies for this assignment are listed in the `requirements.
 pip install -r requirements.txt
 ```
 
+## Part P3
+- P3 is ros2 package located at ./../autonomy directory

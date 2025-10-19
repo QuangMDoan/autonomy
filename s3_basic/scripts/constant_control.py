@@ -29,9 +29,6 @@ class Heartbeat(Node):
         # create a timer with: self.create_timer(<second>, <callback>)
         self.hb_timer = self.create_timer(1.0, self.hb_callback)
 
-        # create subscription with: self.create_subscription(<msg type>, <topic>, <callback>, <qos>)
-        self.motor_sub = self.create_subscription(Bool, "/health/motor", self.health_callback, 10)
-
         self.kill_sub = self.create_subscription(Bool, "/kill", self.kill_callback, 10)
         self.get_logger().info('HeartbeatNode started...')
 
@@ -45,14 +42,6 @@ class Heartbeat(Node):
         msg.angular.z = 0.1 # set this to be the angular velocity
         self.hb_pub.publish(msg)
         self.get_logger().info(f'Publishing: linear.x = {msg.linear.x}, angular.z = {msg.angular.z}')
-
-    def health_callback(self, msg: Bool) -> None:
-        """
-        Sensor health callback triggered by subscription
-        """
-        if not msg.data:
-            self.get_logger().fatal("Heartbeat stopped")
-            self.hb_timer.cancel()
 
     def kill_callback(self, msg: Bool) -> None:
         if msg.data:

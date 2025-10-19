@@ -51,20 +51,19 @@ class AStar(object):
 
     def distance(self, x1, x2):
         """
-        Computes the L1 (Manhattan) distance between two states.
+        Computes the L-infinity (Chebyshev) distance between two states.
         Inputs:
             x1: First state tuple
             x2: Second state tuple
         Output:
-            Float L1 distance (sum of absolute coordinate differences)
+            Float L-infinity distance (maximum absolute coordinate difference)
 
         HINT: This should take one line. Tuples can be converted to numpy arrays using np.array().
+        https://docs.google.com/spreadsheets/d/11Ht-AN1vD2FWVEbLpgdXG8PCFQogA8SIITT2mkSGLMA
         """
         ########## Code starts here ##########
-        # return np.linalg.norm(np.array(x1) - np.array(x2))
-        # See the comparison between L2 and L1 distance at 
-        # https://docs.google.com/document/d/1zdpThFQa85YaMB1DkT94vDJ6dZ4Ls5WkPUq1e0GTrsQ
-        return np.sum(np.abs(np.array(x1) - np.array(x2)))
+        # Using L-infinity norm (Chebyshev distance)
+        return np.max(np.abs(np.array(x1) - np.array(x2)))
         ########## Code ends here ##########
 
     def snap_to_grid(self, x):

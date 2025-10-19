@@ -51,17 +51,17 @@ class AStar(object):
 
     def distance(self, x1, x2):
         """
-        Computes the Euclidean distance between two states.
+        Computes the L1 (Manhattan) distance between two states.
         Inputs:
             x1: First state tuple
             x2: Second state tuple
         Output:
-            Float Euclidean distance
+            Float L1 distance (sum of absolute coordinate differences)
 
         HINT: This should take one line. Tuples can be converted to numpy arrays using np.array().
         """
         ########## Code starts here ##########
-        return np.linalg.norm(np.array(x1) - np.array(x2))
+        return np.sum(np.abs(np.array(x1) - np.array(x2)))
         ########## Code ends here ##########
 
     def snap_to_grid(self, x):

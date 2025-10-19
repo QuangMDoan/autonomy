@@ -61,6 +61,9 @@ class AStar(object):
         HINT: This should take one line. Tuples can be converted to numpy arrays using np.array().
         """
         ########## Code starts here ##########
+        # return np.linalg.norm(np.array(x1) - np.array(x2))
+        # See the comparison between L2 and L1 distance at 
+        # https://docs.google.com/document/d/1zdpThFQa85YaMB1DkT94vDJ6dZ4Ls5WkPUq1e0GTrsQ
         return np.sum(np.abs(np.array(x1) - np.array(x2)))
         ########## Code ends here ##########
 

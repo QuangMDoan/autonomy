@@ -40,13 +40,6 @@ class AStar(object):
               useful here
         """
         ########## Code starts here ##########
-        if x[0] < self.statespace_lo[0] or x[1] < self.statespace_lo[1]:
-            return False
-
-        if x[0] > self.statespace_hi[0] or x[1] > self.statespace_hi[1]:
-            return False
-
-        return self.occupancy.is_free(x)
         ########## Code ends here ##########
 
     def distance(self, x1, x2):
@@ -61,7 +54,6 @@ class AStar(object):
         HINT: This should take one line. Tuples can be converted to numpy arrays using np.array().
         """
         ########## Code starts here ##########
-        return np.linalg.norm(np.array(x1) - np.array(x2))
         ########## Code ends here ##########
 
     def snap_to_grid(self, x):
@@ -96,25 +88,8 @@ class AStar(object):
                is computed.
         """
         ########## Code starts here ##########
-        neighbor_candidates = []
-        dx, dy = self.resolution, self.resolution
-        neighbor_candidates.append((x[0] - dx, x[1])) # left 
-        neighbor_candidates.append((x[0] + dx, x[1])) # right
-
-        neighbor_candidates.append((x[0], x[1] - dy)) # up
-        neighbor_candidates.append((x[0], x[1] + dy)) # down
-
-        neighbor_candidates.append((x[0] - dx, x[1] - dy)) # top-left 
-        neighbor_candidates.append((x[0] + dx, x[1] - dy)) # top-right 
-        
-        neighbor_candidates.append((x[0] - dx, x[1] + dy)) # bottom-left 
-        neighbor_candidates.append((x[0] + dx, x[1] + dy)) # bottom-right 
-
-        neighbor_candidates2 = [self.snap_to_grid(x) for x in neighbor_candidates]
-        neighbors = [ x for x in neighbor_candidates2 if self.is_free(x) ]
-
         ########## Code ends here ##########
-        return neighbors
+        return None
 
     def find_best_est_cost_through(self):
         """
@@ -177,32 +152,6 @@ class AStar(object):
                 set membership efficiently using the syntax "if item in set".
         """
         ########## Code starts here ##########
-        while bool(self.open_set):
-            x_current = self.find_best_est_cost_through()
-            if x_current == self.x_goal:
-                self.path = self.reconstruct_path()
-                return True
-            
-            self.open_set.remove(x_current)
-            self.closed_set.add(x_current)
-
-            for xn in self.get_neighbors(x_current):
-                if xn in self.closed_set:
-                    continue
-                
-                est_cost_to_arrive = self.cost_to_arrive[x_current] + \
-                    self.distance(x_current, xn)
-                
-                if xn not in self.open_set:
-                    self.open_set.add(xn)
-                elif est_cost_to_arrive > self.cost_to_arrive[xn]:
-                    continue
-                
-                self.came_from[xn] = x_current
-                self.est_cost_through[xn] = est_cost_to_arrive + \
-                    self.distance(xn, self.x_goal)
-        
-        return False
         ########## Code ends here ##########
 
 class DetOccupancyGrid2D(object):

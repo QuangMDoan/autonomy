@@ -5,7 +5,7 @@ from utils import plot_line_segments
 
 class AStar(object):
 
-    def __init__(self, statespace_lo, statespace_hi, x_init, x_goal, occupancy, resolution=1):
+    def __init__(self, statespace_lo, statespace_hi, x_init, x_goal, occupancy, func, resolution=1):
         self.statespace_lo = statespace_lo         # state space lower bound (e.g., [-5, -5])
         self.statespace_hi = statespace_hi         # state space upper bound (e.g., [5, 5])
         self.occupancy = occupancy                 # occupancy grid (a DetOccupancyGrid2D object)
@@ -13,6 +13,8 @@ class AStar(object):
         self.x_offset = x_init                     
         self.x_init = self.snap_to_grid(x_init)    # initial state
         self.x_goal = self.snap_to_grid(x_goal)    # goal state
+
+        self.func = func 
 
         self.closed_set = set()    # the set containing the states that have been visited
         self.open_set = set()      # the set containing the states that are candidate for future expension
@@ -28,12 +30,24 @@ class AStar(object):
         self.path = None        # the final path as a list of states
 
     def is_free(self, x):
-        # TODO 
-        return True
+        if x[0] >= self.statespace_lo[0] and x[0] <= self.statespace_hi[0] \
+        and x[1] >= self.statespace_lo[1] and x[1] <= self.statespace_hi[1] \
+        and self.occupancy.is_free(x):  
+            return True
+        return False
 
-    def distance(self, x1, x2):
-        return np.linalg.norm(np.array(x1) - np.array(x2))
+    def distance(self, *args, **kwargs):
+        return self.func(self, *args, **kwargs)
+
+    def l1_norm_distance(self, x1, x2):
+        return np.sum(np.abs(np.array(x1) - np.array(x2)))
     
+    def l2_norm_distance(self, x1, x2):
+        return np.linalg.norm((np.array(x1) - np.array(x2)))
+
+    def linf_norm_distance(self, x1, x2):
+        return np.max(np.abs(np.array(x1) - np.array(x2)))
+
     def snap_to_grid(self, x):
         return (
             self.resolution * round((x[0] - self.x_offset[0]) / self.resolution) + self.x_offset[0],
@@ -41,9 +55,20 @@ class AStar(object):
         )
 
     def get_neighbors(self, x):
-        # TODO
-        neighbors = []
-        return neighbors
+        dx, dy = self.resolution, self.resolution
+        topRight = (x[0] + dx, x[1] + dy)
+        topLeft = (x[0] - dx, x[1] + dy)
+        top = (x[0], x[1] + dy)
+        bottomRight = (x[0] + dx, x[1] - dy)
+        bottomLeft = (x[0] - dx, x[1] - dy)
+        bottom = (x[0], x[1] - dy)
+        right = (x[0] + dx, x[1])
+        left = (x[0] - dx, x[1])
+
+        neighbors = [topRight, topLeft, top, bottomRight, bottomLeft, bottom, right, left]
+        snap_neighbors = [self.snap_to_grid(x) for x in neighbors]
+        free_neighbors = [x for x in snap_neighbors if self.is_free(x)]
+        return free_neighbors
 
     def find_best_est_cost_through(self):
         return min(self.open_set, key=lambda x: self.est_cost_through[x])
@@ -80,7 +105,25 @@ class AStar(object):
         plt.scatter(px, py, color="blue", s=point_size, zorder=10, alpha=0.2)
 
     def solve(self):
-        # TODO
+        while self.open_set:
+            q = self.find_best_est_cost_through()
+            if q == self.x_goal:
+                self.path = self.reconstruct_path() 
+                return True 
+            self.open_set.remove(q)
+            self.closed_set.add(q)
+            for n in self.get_neighbors(q):
+                if n in self.closed_set: 
+                    continue 
+                cost_to_arrive = self.cost_to_arrive[q] + self.distance(q, n)
+                if n not in self.open_set: 
+                    self.open_set.add(n)
+                elif cost_to_arrive > self.cost_to_arrive[n]: 
+                    continue 
+                self.came_from[n] = q 
+                self.cost_to_arrive[n] = cost_to_arrive
+                self.est_cost_through[n] = cost_to_arrive+self.distance(n, self.x_goal)
+
         return False
 
 class DetOccupancyGrid2D(object):

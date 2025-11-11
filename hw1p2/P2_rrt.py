@@ -157,10 +157,11 @@ class GeometricRRT(RRT):
         # Consult function specification in parent (RRT) class.
         ########## Code starts here ##########
         # Hint: This should take 1-3 line.
+        
+        return min(range(len(V)), key=lambda i: np.linalg.norm(np.array(V[i])-np.array(x)))
 
         ########## Code ends here ##########
-        pass
-
+        
     def steer_towards(self, x1, x2, eps):
         # Consult function specification in parent (RRT) class.
         ########## Code starts here ##########

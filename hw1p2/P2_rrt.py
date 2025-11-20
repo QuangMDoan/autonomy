@@ -1,4 +1,6 @@
 import numpy as np
+from numpy.linalg import norm
+
 import matplotlib.pyplot as plt
 from utils import plot_line_segments, line_line_intersection
 
@@ -110,29 +112,27 @@ class RRT(object):
             x_rand = self.statespace_lo + np.random.random(state_dim) * (self.statespace_hi - self.statespace_lo)
             if np.random.random() < goal_bias:
                 x_rand = self.x_goal
-                
-            near_idx = self.find_nearest(V[:n], x_rand)
-            x_near = V[near_idx]
-
+            nearest_idx = self.find_nearest(V[:n], x_rand)
+            x_near = V[nearest_idx]
             x_new = self.steer_towards(x_near, x_rand, eps)
 
             if self.is_free_motion(self.obstacles, x_near, x_new):
-                V[n, :] = x_new
-                P[n] = near_idx
+                V[n] = x_new
+                P[n] = nearest_idx
 
-                if x_new == self.x_goal:
+                if norm(x_new - self.x_goal) <= 1e-6:
                     path = [self.x_goal]
-                    parent_idx = near_idx
+                    parent_idx = nearest_idx
 
-                    while parent_idx >= 0:
+                    while parent_idx >= 0: 
                         path.append(V[parent_idx])
                         parent_idx = P[parent_idx]
 
-                    self.path = path[::-1]
+                    self.path = path[::-1]                        
                     success = True
                     break
 
-                n +=1
+                n += 1
 
         ########## Code ends here ##########
 
@@ -171,7 +171,24 @@ class RRT(object):
             None, but should modify self.path
         """
         ########## Code starts here ##########
+        if self.path == None or len(self.path) < 3: 
+            return 
 
+        success = False
+
+        while not success: 
+            success = True 
+        
+            for i in range (1, len(self.path) - 1):
+                parent = self.path[i-1]
+                child = self.path[i+1]
+                
+                if self.is_free_motion(self.obstacles, parent, child):
+                    self.path.pop(i)
+
+                    success = False
+                    break
+            
         ########## Code ends here ##########
 
 class GeometricRRT(RRT):

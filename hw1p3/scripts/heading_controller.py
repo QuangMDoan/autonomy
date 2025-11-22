@@ -13,21 +13,9 @@ class HeadingController(BaseHeadingController):
         self.kp = 200.0
     
     def compute_control_with_goal(self, state: TurtleBotState, goal: TurtleBotState) -> TurtleBotControl:
-        
-        heading_diff = goal.theta - state.theta
-        wrapped_heading_error = wrap_angle(heading_diff)
-
-        # Use the proportional control formula, ω = kp · err 
-        # to compute the angular velocity required for the TurtleBot to correct its heading error
-        omega = wrapped_heading_error * self.kp
-
-        # Create a new TurtleBotControl message, set its omega attribute 
-        # to the computed angular velocity, and return it
         control = TurtleBotControl()
-        control.omega = omega
-
+        control.omega = wrap_angle(goal.theta - state.theta) * self.kp
         return control
-
 
 if __name__ == "__main__":
     rclpy.init()

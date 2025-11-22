@@ -1,0 +1,12 @@
+{
+  "editor.quickSuggestions": false,
+  "editor.suggestOnTriggerCharacters": false,
+  "editor.wordBasedSuggestions": false,
+  "editor.parameterHints.enabled": false,
+  "editor.suggest.showSnippets": false,
+  "editor.suggest.showWords": false,
+  "editor.parameterHints.enabled": false,
+  "editor.suggestOnTriggerCharacters": false,
+  "javascript.suggest.enabled": false,
+  "python.analysis.aiCodeActions": false
+}

@@ -709,4 +709,92 @@ lsmod | grep nvidia
 You should not see DKMS-style modules; these are kernel-packaged modules.
 
 
+## Install ROS 2 (after nvidia fix)
+
+```
+sudo apt update
+sudo apt upgrade
+sudo apt install ros-kilted-ros-base
+```
+
+### Setup environment
+
+```
+source /opt/ros/kilted/setup.bash
+```
+
+##### DONE with Install ROS2 Kilted on Ubuntu 24.04.3!
+
+## Install Gazebo 
+
+####  Install dependencies
+
+```
+sudo apt-get update
+sudo apt-get install lsb-release wget gnupg
+```
+
+```
+# Install dependencies
+sudo apt-get update
+sudo apt-get install lsb-release wget gnupg
+
+sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+
+sudo apt-get update
+sudo apt-get install gz-ionic
+```
+
+#### Set up a ROS2 workspace by running the following scripts
+
+```
+# install apt depedencies
+sudo apt install git
+
+# create the turtlebot workspace
+mkdir -p ~/tb_ws/src
+
+# clone the sources
+cd ~/tb_ws/src
+git clone -b kilted https://github.com/gazebosim/ros_gz.git
+
+
+
+# install dependencies
+source /opt/ros/kilted/setup.bash  # use setup.zsh if using zsh
+rosdep update && rosdep install --from-paths ~/tb_ws/src -r -i -y
+
+# build the code (might take a few minutes)
+export GZ_VERSION=ionic
+cd ~/tb_ws && colcon build --symlink-install
+
+# include the setup script (replace bash with zsh if using zsh)
+echo "source /opt/ros/kilted/setup.bash" >> ~/.bashrc
+echo "source \$HOME/tb_ws/install/local_setup.bash" >> ~/.bashrc
+
+echo "alias update_tb_ws=\$HOME/tb_ws/src/asl-tb3-utils/scripts/update.sh" >> ~/.bashrc
+
+source ~/.bashrc
+
+```
+
+### Try starting ROS and Gazebo with a simulated TurtleBot to verify that everything is installed correctly. 
+
+Use this command:
+
+```
+ros2 launch asl_tb3_sim root.launch.py
+```
+
+More: https://github.com/StanfordASL/asl-tb3-utils?tab=readme-ov-file
+
+
+
+
+
+
+
+
+
 

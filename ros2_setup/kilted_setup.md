@@ -202,5 +202,282 @@ After reboot:
 
 ```
 $ nvidia-smi
+
+No devices were found
+
+This output tells us something important and a bit counter-intuitive: the package manager thinks NVIDIA is installed, but the kernel does not see a GPU driver at all.
+
+```
+
+>The system is not seeing the NVIDIA kernel driver at all, despite the userspace packages being installed. This is no longer an apt dependency problem; it’s a driver–kernel attachment failure.
+
+>nvidia-smi saying “No devices were found” is not a userspace problem. It means the NVIDIA kernel module is missing, unloaded, or blocked, or the GPU isn’t being bound to it.
+
+Let’s reason this through carefully.
+First, what this is not:
+
+- Not a CUDA issue
+- Not a PATH issue
+- Not a ROS issue
+- Not a permissions issue
+
+This is a driver ↔ kernel failure.
+
+#### The key facts:
+
+- nvidia-driver-580 is installed
+- nvidia-smi → “No devices were found”
+- That message means the kernel module is not loaded or not allowed to load
+- If the GPU were dead or unsupported, you’d usually see a different error
+
+Let’s walk this forward, skeptically, and rule out the real causes.
+
+#### Step 1: Confirm the GPU exists at the hardware level
+
+Expected:
+>01:00.0 VGA compatible controller: NVIDIA Corporation ...
+
+- If nothing appears → BIOS / VM / hardware passthrough issue
+- If it does appear → kernel-driver problem (most likely)
+
+```
+$ lspci | grep -i nvidia
+02:00.0 VGA compatible controller: NVIDIA Corporation Device 2c58 (rev a1)
+02:00.1 Audio device: NVIDIA Corporation Device 22e9 (rev a1)
+```
+
+####  Step 2: Check if the NVIDIA kernel module is loaded
+
+```
+lsmod | grep nvidia
+```
+
+##### Outcomes:
+
+- Nothing printed → driver never loaded
+- nvidia, nvidia_drm, nvidia_uvm present → module loaded, but device blocked elsewhere
+
+Given your symptoms, expect nothing.
+
+#### Step 3: Check Secure Boot (very common failure)
+
+On Ubuntu, Secure Boot silently blocks NVIDIA modules unless they’re enrolled.
+
+```
+mokutil --sb-state
+```
+
+If you see:
+
+>SecureBoot enabled
+
+Then this is almost certainly the problem.
+
+##### Why this matters
+
+- NVIDIA kernel modules are out-of-tree
+- Secure Boot blocks them unless you:
+- enroll a MOK key, or
+- disable Secure Boot
+
+#### Fastest fix (recommended unless you need SB):
+
+- Reboot
+- Enter BIOS/UEFI
+- Disable Secure Boot
+- Boot back into Ubuntu
+Run:
+```
+$ sudo modprobe nvidia
+$ nvidia-smi
+```
+
+If Secure Boot was the blocker, nvidia-smi will immediately start working.
+
+#### Step 4: Check kernel / driver mismatch
+
+If Secure Boot is already disabled, then suspect a kernel build issue.
+
+```
+uname -r
+dkms status
+```
+
+You should see something like:
+
+> nvidia/580.105.08, <kernel>, installed
+
+If instead you see:
+- added
+- built
+- or nothing for nvidia
+
+Then DKMS did not successfully build the module.
+
+##### Force rebuild:
+```
+sudo apt install --reinstall nvidia-dkms-580
+sudo dkms autoinstall
+sudo reboot
+```
+
+#### Step 5: Check for nouveau interference
+
+Even when purged, nouveau can still load early.
+
+```
+lsmod | grep nouveau
+```
+
+If it appears:
+```
+sudo nano /etc/modprobe.d/blacklist-nouveau.conf
+```
+
+Add
+```
+blacklist nouveau
+options nouveau modeset=0
+```
+
+Then:
+
+```
+sudo update-initramfs -u
+sudo reboot
+```
+
+#### Why this happened (important perspective)
+
+- Apt did its job: userspace is consistent
+- The failure is below apt, in the kernel boundary
+- NVIDIA drivers are fragile across:
+    - kernel updates
+    - Secure Boot
+    - DKMS rebuild timing
+
+The “31 not upgraded” line is a red herring — unrelated
+
+This is exactly why GPU issues feel opaque: the failure mode is silent refusal, not an error.
+
+### Minimal checklist (most likely path)
+
+In order of probability:
+
+- lspci | grep -i nvidia → confirm GPU exists
+- mokutil --sb-state → disable Secure Boot if enabled
+- dkms status → rebuild if missing
+- Ensure nouveau is gone
+
+If you paste the outputs of Steps 1–3, we can pinpoint it in one more round instead of guessing.
+
+
+
+### Analysis 
+
+```
+$ lspci | grep -i nvidia
+
+02:00.0 VGA compatible controller: NVIDIA Corporation Device 2c58 (rev a1)
+02:00.1 Audio device: NVIDIA Corporation Device 22e9 (rev a1)
+
+$ lsmod | grep nvidia
+
+nvidia_uvm           2076672  0
+nvidia_drm            135168  0
+nvidia_modeset       1638400  1 nvidia_drm
+nvidia              104091648 2 nvidia_uvm,nvidia_modeset
+drm_ttm_helper         16384  2 nvidia_drm,xe
+nvidia_wmi_ec_backlight    12288  0
+video                  77824  5 nvidia_wmi_ec_backlight,dell_wmi,xe,i915,nvidia_modeset
+wmi                    28672  10 dell_wmi_sysman,video,nvidia_wmi_ec_backlight,dell_wmi_ddv,alienware_wmi,dell_wmi,wmi_bmof,dell_smm_hwmon,dell_smbios,dell_wmi_descriptor
+
+```
+
+#### What this definitively tells us
+
+##### 1. Hardware is real and visible
+
+> lspci | grep -i nvidia
+02:00.0 VGA compatible controller: NVIDIA Corporation Device 2c58
+
+###### PCIe sees the GPU. This rules out:
+- dead hardware
+- BIOS completely hiding the GPU
+- wrong machine / VM
+
+So the GPU exists and is enumerated.
+
+##### 2. Kernel driver is loaded and attached
+```
+nvidia
+nvidia_modeset
+nvidia_drm
+nvidia_uvm
+```
+
+
+##### This means:
+
+- The NVIDIA kernel modules successfully loaded
+- Secure Boot is probably not blocking the module (otherwise they wouldn’t load)
+- The kernel accepted the driver
+
+##### This rules out:
+
+- unsigned driver rejection
+- missing kernel headers
+- dkms build failure
+
+##### So why does nvidia-smi say “No devices were found”?
+At this point, the failure is not installation-level. It’s runtime / mode-level.
+
+There are only a few realistic causes left.
+
+#### Most likely causes (ranked)
+🔴 1. GPU is in compute-disabled / power-gated state (common on laptops)
+
+On many laptops (especially Dell/Alienware, which your modules suggest), the GPU:
+
+- is powered off by ACPI
+- only turns on when a PRIME offload client requests it
+- loads the kernel driver, but exposes no active devices
+
+This produces exactly:
+
+- lspci sees GPU
+- lsmod shows NVIDIA
+- nvidia-smi sees nothing
+
+```
+# quick test 
+$ cat /proc/driver/nvidia/gpus/*
+
+cat: '/proc/driver/nvidia/gpus/0000:02:00.0': Is a directory
+```
+
+If this directory exists but shows minimal info or errors → power-gating issue.
+
+
+🔴 2. PRIME configuration incomplete or broken
+
+Check:
+
+```
+$ prime-select query
+on-demand
+```
+If it says intel (or nothing), the NVIDIA GPU is not the active provider.
+
+Try: 
+
+```
+sudo prime-select nvidia
+sudo reboot
+```
+
+After reboot:
+```
+nvidia-smi
 ```
 

@@ -429,6 +429,31 @@ nvidia_uvm
 - missing kernel headers
 - dkms build failure
 
+
+#### Check if Secure Boot is silently blocking the driver
+
+This is extremely common on Ubuntu and gives exactly your symptoms.
+
+Check Secure Boot state:
+
+```
+$ mokutil --sb-state
+SecureBoot disabled
+```
+
+#### Check if Nouveau is grabbing the GPU first
+
+```
+$ lsmod | grep nouveau
+
+```
+
+If nouveau is loaded, NVIDIA can’t attach.
+
+This usually means the blacklist didn’t apply because the NVIDIA module failed to build.
+
+
+
 ##### So why does nvidia-smi say “No devices were found”?
 At this point, the failure is not installation-level. It’s runtime / mode-level.
 

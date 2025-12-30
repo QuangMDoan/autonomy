@@ -506,3 +506,207 @@ After reboot:
 nvidia-smi
 ```
 
+### Analysis after Reboot and run 
+
+```
+$ prime-select query 
+nvidia 
+
+$ lsmod | grep nvidia 
+
+nvidia_uvm 2076672 0 nvidia_drm 135168 0 nvidia_modeset 1638400 1 nvidia_drm nvidia 104091648 2 nvidia_uvm,nvidia_modeset drm_ttm_helper 16384 2 nvidia_drm,xe nvidia_wmi_ec_backlight 12288 0 video 77824 5 nvidia_wmi_ec_backlight,dell_wmi,xe,i915,nvidia_modeset wmi 28672 10 dell_wmi_sysman,video,nvidia_wmi_ec_backlight,dell_wmi_ddv,alienware_wmi,dell_wmi,wmi_bmof,dell_smm_hwmon,dell_smbios,dell_wmi_descriptor 
+
+$ qd@a18q:~$ nvidia-smi 
+
+No devices were found
+```
+
+This combination is unusual but very telling:
+
+- prime-select query → nvidia
+- lsmod → all NVIDIA kernel modules loaded
+- nvidia-smi → No devices were found
+
+At this point, apt, DKMS, Secure Boot, and module loading are all fine. The failure is lower-level: the driver is loaded, but the kernel does not see any NVIDIA PCI device it can bind to.
+
+That narrows the possibilities a lot.
+
+The only remaining explanations (ranked by likelihood)
+
+1️⃣ You are in an environment with no physical NVIDIA GPU
+- A VM (VirtualBox, VMware, QEMU without GPU passthrough)
+- WSL
+- A remote/containerized environment
+- A system where the dGPU is physically absent
+
+2️⃣ The NVIDIA GPU exists but is hidden / powered off at firmware level. Common on laptops:
+
+- dGPU disabled in BIOS/UEFI
+- “Hybrid graphics” set to iGPU-only
+- Advanced Optimus / Dynamic MUX set to integrated
+
+Linux cannot see what firmware hides.
+
+
+3️⃣ ACPI / PCIe power-gating failure (rare, but real)
+The GPU exists, but ACPI never exposes it to the OS.
+
+This usually shows up after:
+- BIOS updates
+- Kernel jumps
+- Vendor-specific quirks (Dell / Alienware especially)
+
+The single most important command (we must see this)
+
+Run exactly:
+
+```
+$ lspci -nn | grep -i -E "nvidia|3d|vga"
+
+00:02.0 VGA compatible controller [0300]: Intel Corporation Arrow Lake-U [Intel Graphics] [8086:7d67] (rev 06)
+02:00.0 VGA compatible controller [0300]: NVIDIA Corporation Device [10de:2c58] (rev a1)
+02:00.1 Audio device [0403]: NVIDIA Corporation Device [10de:22e9] (rev a1)
+80:14.5 Non-VGA unclassified device [0000]: Intel Corporation Device [8086:7f2f] (rev 10)
+80:1c.5 PCI bridge [0604]: Intel Corporation Device [8086:7f3d] (rev 10)
+```
+
+```
+$ sudo dmesg | grep -i nvrm
+
+[    5.499014] NVRM: loading NVIDIA UNIX x86_64 Kernel Module  580.105.08  Wed Oct 29 23:15:11 UTC 2025
+[    5.559842] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[    5.559858] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[    5.560313] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[    8.481576] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[    8.481591] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[    8.482116] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[    8.545192] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[    8.545210] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[    8.545825] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[   19.347587] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[   19.347611] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[   19.348087] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[   26.075277] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[   26.075297] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[   26.076113] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[   26.118770] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[   26.118790] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[   26.119220] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[   26.174394] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[   26.174414] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[   26.175177] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[   26.220909] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[   26.220972] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[   26.222252] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[   26.269779] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[   26.269796] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[   26.270253] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[   26.317106] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[   26.317165] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[   26.318344] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[  126.503208] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[  126.503233] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[  126.504003] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[  236.043883] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[  236.043901] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[  236.045589] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[  236.087002] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[  236.087021] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[  236.087498] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[  236.139942] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[  236.139963] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[  236.141375] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[  236.187041] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[  236.187070] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[  236.187828] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[  236.231333] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[  236.231350] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[  236.231852] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0
+[  236.276712] NVRM: The NVIDIA GPU 0000:02:00.0 (PCI ID: 10de:2c58)
+               NVRM: installed in this system requires use of the NVIDIA open kernel modules.
+[  236.276774] NVRM: GPU 0000:02:00.0: RmInitAdapter failed! (0x22:0x56:884)
+[  236.277975] NVRM: GPU 0000:02:00.0: rm_init_adapter failed, device minor number 0You are currently running the proprietary (closed) kernel module, and your GPU will not initialize with it. When that happens, RM aborts (RmInitAdapter failed), and nvidia-smi correctly reports No devices were found even though /dev/nvidia0 exists.
+
+This is not a misconfiguration. It’s a hard requirement for this GPU + driver generation.
+
+```
+
+
+You are currently running the proprietary (closed) kernel module, and your GPU will not initialize with it. When that happens, RM aborts (RmInitAdapter failed), and nvidia-smi correctly reports No devices were found even though /dev/nvidia0 exists.
+
+This is not a misconfiguration. It’s a hard requirement for this GPU + driver generation.
+
+### What this means (no hand-waving)
+- Your GPU (PCI ID 10de:2c58, Ada mobile) cannot be driven by the proprietary kernel module anymore
+- Driver 580 enforces open-kernel-only support for this device
+- Loading the closed module succeeds technically, but RM refuses to bind
+That exact failure mode is what you’re seeing
+
+So the earlier assumption (“open is broken, use proprietary”) is incorrect for this GPU. NVIDIA has flipped the requirement.
+
+
+## The fix (clean and deterministic)
+
+You must switch fully to the 580 open kernel modules.
+
+### 1. Purge the proprietary stack
+
+This step matters — mixed installs will not work.
+
+```
+sudo apt purge nvidia-driver-580
+sudo apt purge nvidia-dkms-580
+sudo apt autoremove
+```
+
+### 2. Install the open kernel driver
+
+Do not install anything else yet.
+
+```
+sudo apt install nvidia-driver-580-open
+```
+
+#### This will pull in:
+
+- linux-modules-nvidia-open-580-*
+- the correct userspace stack
+- no DKMS build (prebuilt kernel modules)
+
+### 3. Reboot (mandatory)
+
+```
+sudo reboot
+```
+
+### 4. Verify (this should now work)
+```
+nvidia-smi
+```
+
+You should finally see your GPU listed.
+Also sanity-check:
+
+```
+lsmod | grep nvidia
+```
+You should not see DKMS-style modules; these are kernel-packaged modules.
+
+
+

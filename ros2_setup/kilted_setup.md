@@ -176,3 +176,31 @@ $ sudo apt autoremove
 ```
 
 ### 2. Reboot (non-negotiable)
+
+You should boot using nouveau or basic graphics — that’s fine.
+
+```bash
+$ sudo reboot
+```
+
+### 3. Install driver 580 cleanly
+
+```bash
+$ sudo apt update
+$ sudo apt install nvidia-driver-580
+```
+
+or, if you prefer auto-selection:
+
+```
+$ sudo ubuntu-drivers autoinstall
+```
+
+### 4. Verify
+
+After reboot:
+
+```
+$ nvidia-smi
+```
+

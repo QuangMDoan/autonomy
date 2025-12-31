@@ -5,11 +5,10 @@ from rclpy.node import Node
 from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist 
 
-
 class MoveStraightLine(Node):
     def __init__(self):
         super().__init__("movestraightline")
-        self.v = 0.5
+        self.v = 0.06
         self.theta = 0.0
 
         self.publisher = self.create_publisher(Twist, "/cmd_vel", 10)
@@ -24,16 +23,15 @@ class MoveStraightLine(Node):
         self.publisher.publish(msg)
 
     def kill_callback(self, msg: Bool):
-        if not msg.data:
+        if msg.data:
             msg = Twist()
             self.publisher.publish(msg)
             
-            self.get_logger().fatal("heartbeat stopped")
+            self.get_logger().fatal("killed the timer")
 
             self.hb_timer.cancel()
 
 if __name__ == "__main__":
-    # initialize ROS2 context 
     rclpy.init()
     node = MoveStraightLine()
     rclpy.spin(node)

@@ -19,16 +19,13 @@ class MoveStraightLine(Node):
         msg = Twist()
         msg.linear.x = self.v
         msg.angular.z = self.theta
-
         self.publisher.publish(msg)
 
     def kill_callback(self, msg: Bool):
         if msg.data:
-            msg = Twist()
-            self.publisher.publish(msg)
-            
+            msg2 = Twist()
+            self.publisher.publish(msg2)
             self.get_logger().fatal("killed the timer")
-
             self.hb_timer.cancel()
 
 if __name__ == "__main__":

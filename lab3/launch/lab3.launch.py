@@ -6,7 +6,9 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     constant_control_node = Node(
         package="lab3",
-        executable="constant_control.py"
+        executable="constant_control.py",
+        parameters=[{"use_sim_time": True}],
+        output="screen",
     )
 
     # Launches RViz with your configuration file

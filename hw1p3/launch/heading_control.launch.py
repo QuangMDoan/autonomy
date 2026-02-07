@@ -20,7 +20,7 @@ def generate_launch_description():
                 launch_arguments={
                     "config": PathJoinSubstitution(
                         [
-                            FindPackageShare("autonomy"),
+                            FindPackageShare("hw1p3"),
                             "rviz",
                             "default.rviz",
                         ]
@@ -44,7 +44,7 @@ def generate_launch_description():
             # student's heading controller node
             Node(
                 executable="heading_controller.py",
-                package="autonomy",
+                package="hw1p3",
             ),
         ]
     )

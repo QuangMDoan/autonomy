@@ -5,7 +5,7 @@ def generate_2d_cloud(mu=0, sigma=1, N=100):
     points = np.random.normal(loc=mu, scale=sigma, size=(2, N))
     return points
 
-def body_transforn(A, theta=5, t=[0.1, 0.3]):
+def body_transforn(B, theta=5, t=[0.1, 0.3]):
     theta = np.deg2rad(theta)
 
     R = [
@@ -16,12 +16,12 @@ def body_transforn(A, theta=5, t=[0.1, 0.3]):
     R = np.array(R)
     t = np.array(t)
         
-    B = R @  A + t[:, np.newaxis]
-    return R, t, B
+    A = R @  B + t[:, np.newaxis]
+    return R, t, A
 
 def generate_ab_clouds(N=25):
-    A = generate_2d_cloud(N=N)
-    R, t, B = body_transforn(A)
+    B = generate_2d_cloud(N=N)
+    R, t, A = body_transforn(B)
     np.save("data/a.npy", A)
     np.save("data/b.npy", B)
     np.save("data/r.npy", R)

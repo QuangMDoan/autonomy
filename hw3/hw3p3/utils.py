@@ -13,11 +13,16 @@ def body_transforn(A, theta=5, t=[0.1, 0.3]):
             [np.sin(theta),  np.cos(theta) ]
         ]
     
-    B = R @  A + np.array(t).reshape(-1, 1)
-    return B
+    R = np.array(R)
+    t = np.array(t)
+        
+    B = R @  A + t[:, np.newaxis]
+    return R, t, B
 
-def generate_ab_clouds():
-    A = generate_2d_cloud(N=25)
-    B = body_transforn(A)
+def generate_ab_clouds(N=25):
+    A = generate_2d_cloud(N=N)
+    R, t, B = body_transforn(A)
     np.save("data/a.npy", A)
     np.save("data/b.npy", B)
+    np.save("data/r.npy", R)
+    np.save("data/t.npy", t)

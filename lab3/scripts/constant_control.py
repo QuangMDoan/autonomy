@@ -11,12 +11,24 @@ class Heartbeat(Node):
         self.hb_timer = self.create_timer(0.5, self.hb_callback)
         self.hb_publisher = self.create_publisher(Twist, "/cmd_vel", 10)
         self.kill_subscriber = self.create_subscription(Bool, "/kill", self.kill_callback, 10)
-        self.get_logger.info("heartbeat node started")
+        self.get_logger().info("heartbeat node started")
+        
+        self.count = 0
+        self.stopCount = 20
+        self.forward = True
 
     def hb_callback(self):
+
+        if self.count >= self.stopCount:
+            self.count = 0
+            self.forward = not self.forward
+
         msg = Twist()
-        msg.linear.x = 0.2
-        msg.angular.z = 0.1
+        if self.forward: 
+            msg.linear.x = 0.2
+        else:
+            msg.linear.x = -0.2
+
         self.hb_publisher.publish(msg)
         self.get_logger().info(f"Publishing: linear.x {msg.linear.x}, angular.z {msg.angular.z}")
     

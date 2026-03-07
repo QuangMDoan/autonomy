@@ -17,6 +17,10 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+# Register your launch and RViz configuration files with CMake
+install(DIRECTORY launch rviz DESTINATION 
+share/${PROJECT_NAME}) 
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

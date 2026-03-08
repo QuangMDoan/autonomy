@@ -5,28 +5,25 @@ from asl_tb3_lib.control import BaseHeadingController
 from asl_tb3_lib.math_utils import wrap_angle
 from asl_tb3_msgs.msg import TurtleBotControl, TurtleBotState
 
-def HeadingController(BaseHeadingController):
+class HeadingController(BaseHeadingController):
     def __init__(self):
         super().__init__()
-        self.kp = 2.0
-
-    # Compute control given current robot state and goal state
-    # Returns: a control command of type TurtleBotControl
+        self.kp = 200.0
     
     def compute_control_with_goal(self, 
-        state: TurtleBotState,
+        state: TurtleBotState, 
         goal: TurtleBotState
     ) -> TurtleBotControl:
-        heading_error = wrap_angle(goal.theta-state.theta)
-        omega = self.kp*heading_error
-        msg = TurtleBotControl()
-        msg.omega = omega
-        return msg 
+        control = TurtleBotControl()
+        control.omega = wrap_angle(goal.theta - state.theta) * self.kp
+        return control
 
 if __name__ == "__main__":
     rclpy.init()
-    node = HeadingController()
-    rclpy.spin(node)
-    rclpy.shutdown()
+    controller = HeadingController()
 
-        
+    # Spin the node using rclpy.spin() to keep it running and listening for messages
+    rclpy.spin(controller)
+
+    # Ensure to shut down the ROS2 system with rclpy.shutdown() after spinning.
+    rclpy.shutdown()

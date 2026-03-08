@@ -36,12 +36,10 @@ def generate_launch_description():
                     {"output_channel": "/cmd_pose"},
                 ],
             ),
-            # state publisher for turtlebot
             Node(
                 executable="state_publisher.py",
                 package="asl_tb3_lib",
             ),
-            # student's heading controller node
             Node(
                 executable="heading_controller.py",
                 package="steering_control",

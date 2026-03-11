@@ -7,7 +7,21 @@
 - Optionally, use teleop to drive manually
 
 ### 1: Install required packages
+
+
 ```bash
+# Add the ROS 2 repository
+sudo apt update
+sudo apt install -y curl gnupg lsb-release
+
+# Add the ROS key:
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+
+# Add the ROS repository:
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+| sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
 sudo apt update
 sudo apt install -y \
 ros-jazzy-turtlebot4-simulator \
@@ -22,6 +36,7 @@ ros-jazzy-slam-toolbox
 - ros-gz & ros-gz-sim → ROS 2 ↔ Gazebo bridge
 - slam-toolbox → SLAM for mapping
 
+
 ### 2: Source ROS 2 Jazzy
 
 ```bash
@@ -32,7 +47,7 @@ Add command to `~/.bashrc` to auto-source:
 
 ```bash
     echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
-    source ~/.bashrc    
+    source ~/.bashrc
 ```
 
 ### 3: Launch Gazebo with TurtleBot4

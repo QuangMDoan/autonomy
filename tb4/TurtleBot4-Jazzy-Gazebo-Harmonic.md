@@ -53,7 +53,7 @@ Add command to `~/.bashrc` to auto-source:
 ### 3: Launch Gazebo with TurtleBot4
 
 ```bash
-ros2 launch turtlebot4_gz_bringup turtlebot4_world.launch.py
+ros2 launch turtlebot4_gz_bringup turtlebot4_gz.launch.py
 ```
 
 - Opens Gazebo Harmonic
@@ -156,7 +156,7 @@ def generate_launch_description():
     tb4_bringup_dir = get_package_share_directory('turtlebot4_gz_bringup')
     
     gazebo_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(tb4_bringup_dir, 'launch', 'turtlebot4_world.launch.py'))
+        PythonLaunchDescriptionSource(os.path.join(tb4_bringup_dir, 'launch', 'turtlebot4_gz.launch.py'))
     )
     
     slam_launch = IncludeLaunchDescription(
@@ -241,7 +241,7 @@ def generate_launch_description():
     # Include Gazebo launch with world argument
     gazebo_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(tb4_bringup_dir, 'launch', 'turtlebot4_world.launch.py')
+            os.path.join(tb4_bringup_dir, 'launch', 'turtlebot4_gz.launch.py')
         ),
         launch_arguments={'world': LaunchConfiguration('world')}.items()
     )

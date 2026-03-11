@@ -62,9 +62,10 @@ ros2 launch turtlebot4_gz_bringup turtlebot4_gz.launch.py
 
 ### 4: Start SLAM
 
+SLAM is a built-in flag on the main launch file:
+
 ```bash
-source /opt/ros/jazzy/setup.bash
-ros2 launch turtlebot4_gz_bringup turtlebot4_slam.launch.py
+ros2 launch turtlebot4_gz_bringup turtlebot4_gz.launch.py slam:=true
 ```
 
 - This launches SLAM Toolbox (online mapping)
@@ -73,13 +74,13 @@ ros2 launch turtlebot4_gz_bringup turtlebot4_slam.launch.py
 
 ### 5: Start Navigation (Nav2)
 
-Once we have a map (or while we are mapping):
+Nav2 is also a built-in flag — run alongside SLAM in one command:
 
 ```bash
-ros2 launch turtlebot4_gz_bringup turtlebot4_navigation.launch.py
+ros2 launch turtlebot4_gz_bringup turtlebot4_gz.launch.py slam:=true nav2:=true
 ```
 
-- Launches Nav2 stack
+- Launches Nav2 stack alongside SLAM
 - Uses the existing map or SLAM data
 - Supports autonomous navigation with goals
 
@@ -145,39 +146,33 @@ Create a file: `launch/tb4_full_sim.launch.py`
 ```python
 
 from launch import LaunchDescription
-from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
-    # Paths to existing TurtleBot4 launch files
     tb4_bringup_dir = get_package_share_directory('turtlebot4_gz_bringup')
     
-    gazebo_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(tb4_bringup_dir, 'launch', 'turtlebot4_gz.launch.py'))
-    )
-    
-    slam_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(tb4_bringup_dir, 'launch', 'turtlebot4_slam.launch.py'))
-    )
-    
-    nav_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(tb4_bringup_dir, 'launch', 'turtlebot4_navigation.launch.py'))
+    # turtlebot4_gz.launch.py handles Gazebo, SLAM, and Nav2 via flags
+    full_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(tb4_bringup_dir, 'launch', 'turtlebot4_gz.launch.py')),
+        launch_arguments={
+            'slam': 'true',
+            'nav2': 'true',
+            'rviz': 'true',
+        }.items()
     )
     
     return LaunchDescription([
-        gazebo_launch,
-        slam_launch,
-        nav_launch
+        full_launch,
     ])
 
 ```
 
-- gazebo_launch → spawns TurtleBot4 in Gazebo
-- slam_launch → SLAM Toolbox (online mapping)
-- nav_launch → Nav2 stack
+- `slam:=true` → SLAM Toolbox (online mapping)
+- `nav2:=true` → Nav2 stack
+- `rviz:=true` → RViz2 for visualization
 
 #### d: Build the workspace
 
@@ -221,7 +216,6 @@ We can extend launch file, `tb4_full_sim.launch.py`,  so it:
 # tb4_full_sim.launch.py
 
 from launch import LaunchDescription
-from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
@@ -232,49 +226,28 @@ def generate_launch_description():
     # Launch argument to choose Gazebo world
     world_arg = DeclareLaunchArgument(
         'world',
-        default_value='empty.world',  # default Gazebo world
+        default_value='warehouse',  # default world (warehouse, depot, maze)
         description='Gazebo world to load'
     )
-    
+
     tb4_bringup_dir = get_package_share_directory('turtlebot4_gz_bringup')
-    
-    # Include Gazebo launch with world argument
-    gazebo_launch = IncludeLaunchDescription(
+
+    # Single launch file handles Gazebo + SLAM + Nav2 + RViz2 via flags
+    full_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(tb4_bringup_dir, 'launch', 'turtlebot4_gz.launch.py')
         ),
-        launch_arguments={'world': LaunchConfiguration('world')}.items()
+        launch_arguments={
+            'world': LaunchConfiguration('world'),
+            'slam': 'true',
+            'nav2': 'true',
+            'rviz': 'true',
+        }.items()
     )
-    
-    # SLAM launch
-    slam_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(tb4_bringup_dir, 'launch', 'turtlebot4_slam.launch.py')
-        )
-    )
-    
-    # Nav2 launch
-    nav_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(tb4_bringup_dir, 'launch', 'turtlebot4_navigation.launch.py')
-        )
-    )
-    
-    # RViz2 node
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        output='screen',
-        arguments=['-d', os.path.join(tb4_bringup_dir, 'rviz', 'turtlebot4_nav.rviz')]
-    )
-    
+
     return LaunchDescription([
         world_arg,
-        gazebo_launch,
-        slam_launch,
-        nav_launch,
-        rviz_node
+        full_launch,
     ])
 ```
 

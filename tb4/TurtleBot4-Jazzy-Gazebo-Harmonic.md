@@ -77,7 +77,9 @@ ros2 launch turtlebot4_gz_bringup turtlebot4_gz.launch.py slam:=true
 Nav2 is also a built-in flag — run alongside SLAM in one command:
 
 ```bash
-ros2 launch turtlebot4_gz_bringup turtlebot4_gz.launch.py slam:=true nav2:=true
+# ros2 launch turtlebot4_gz_bringup turtlebot4_gz.launch.py slam:=true nav2:=true 
+
+ros2 launch turtlebot4_gz_bringup turtlebot4_gz.launch.py slam:=true nav2:=true rviz:=true gz_args:="-s"
 ```
 
 - Launches Nav2 stack alongside SLAM
